@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html ng-app="myApp">
+<head>
+    <title></title>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="http://cdn3.devexpress.com/jslib/15.2.5/css/dx.common.css" />
+    <link rel="stylesheet" type="text/css" href="http://cdn3.devexpress.com/jslib/15.2.5/css/dx.light.css" />
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/angularjs/1.3.11/angular-sanitize.js"></script>
+    <script type="text/javascript" src="http://ajax.aspnetcdn.com/ajax/globalize/0.1.1/globalize.min.js"></script>
+    <script type="text/javascript" src="http://cdn3.devexpress.com/jslib/15.2.5/js/dx.all.js"></script>
+    <script type="text/javascript">
+        var store = new DevExpress.data.ODataStore({
+            url: "http://localhost:51681/DataService.svc/MyTables",
+            key: "ID",
+            keyType: "Int32"
+        });
+        var myApp = angular.module('myApp', ['dx']);
+        myApp.controller("demoController", function ($scope) {
+            $scope.gridInstance = null;
+            $scope.gridConfig = {
+                dataSource: store,
+                columns: ["FirstName", "LastName", {
+                    cellTemplate: 'commandColumn'
+                }],
+                editClick: function (rowIndex, row) {
+                    var data = jQuery.extend({}, row);
+                    $scope.currentRow = {
+                        key: $scope.gridInstance.getKeyByRowIndex(rowIndex),
+                        data: data,
+                    };
+                    $scope.popupVisible = true;
+                },
+                onInitialized: function (e) {
+                    $scope.gridInstance = e.component;
+                }
+            };
+            $scope.popupVisible = false;
+            $scope.popupConfig = {
+                bindingOptions: {
+                    visible: 'popupVisible',
+                },
+                contentTemplate: 'content',
+            },
+            $scope.currentRow = null;
+            $scope.formConfig = {
+                bindingOptions: {
+                    formData: 'currentRow.data'
+                },
+                items: ["FirstName", "LastName"],
+            };
+            $scope.saveButtonConfig = {
+                text: 'Save',
+                onClick: function () {
+                    store.update($scope.currentRow.key, $scope.currentRow.data)
+                        .done(function () {
+                            $scope.gridInstance.refresh();
+                        });
+                    $scope.popupVisible = false;
+                },
+            };
+            $scope.cancelButtonConfig = {
+                text: 'Cancel',
+                onClick: function () {
+                    $scope.popupVisible = false;
+                },
+            };
+        });
+    </script>
+</head>
+<body ng-controller="demoController">
+    <div dx-data-grid="gridConfig">
+        <div data-options="dxTemplate: { name: 'commandColumn' }">
+            <a class="dx-link" ng-click="$parent.gridConfig.editClick(rowIndex, data)">Edit</a>
+        </div>
+    </div>
+    <div dx-popup="popupConfig">
+        <div data-options="dxTemplate: { name: 'content' }">
+            <div dx-form="formConfig" style="margin-bottom: 10px;"></div>
+            <div id="btnSave" dx-button="saveButtonConfig"></div>
+            <div id="btnCancel" dx-button="cancelButtonConfig"></div>
+        </div>
+    </div>
+</body>
+</html>
